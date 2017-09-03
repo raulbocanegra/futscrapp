@@ -1,34 +1,55 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(tools C CXX)
+project(futscrapp C CXX)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+include(cmake/platform.cmake)
 
 message("Build: ${CMAKE_GENERATOR}")
 
-# Specific definitions depending on the platform.
+set_platform_properties()
+
+# Set global platform variable for source directories
 if (UNIX)
-  set( PLATFORM "linux")
-  add_compile_options(
-      -m64 # 64 bits build flag
-  )
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
-  set(CMAKE_CXX_STANDARD 11) # C++11...
-  set(CMAKE_CXX_STANDARD_REQUIRED ON) #...is required...
-  set(CMAKE_CXX_EXTENSIONS OFF) #...without compiler extensions like gnu++11
+	set(PLATFORM "linux")	
 elseif (WIN32 AND MSVC)
-  set( PLATFORM "windows")
-  add_definitions(
-      -DNOMINMAX # https://support.microsoft.com/en-gb/help/143208/prb-using-stl-in-windows-program-can-cause-min-max-conflicts
-  )
-  add_compile_options(
-      /MP # https://msdn.microsoft.com/en-us/library/bb385193.aspx
-  )  
-endif()
+	set(PLATFORM "windows")	
+endif()	
+
+# Testing library include dir
+set(CATCH_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/external/test/include")
+
+find_path(CPPREST_INCLUDE cpprest/http_client.h)
+find_library(CPPREST_LIB NAMES cpprest_2_9d cpprest_2_9 cpprestd cpprest)
+find_package(Boost REQUIRED COMPONENTS random system thread filesystem chrono atomic date_time regex)
+find_package(OpenSSL 1.0.0 REQUIRED)
+find_package(CURL)
+find_package(LibXml2)
+
+# Add subdirectories
+add_subdirectory(futscrapplib)
 
 # Header and sources
-set(TOOLS_HEADERS include/MyClass.h)
-set(TOOLS_SOURCES src/MyClass.cpp
-                  src/Main.cpp)
+#set(FUTSCRAPP_HEADERS )
+set(FUTSCRAPP_SOURCES Main.cpp)
 
 # target definitions
-add_executable(tools ${TOOLS_HEADERS} ${TOOLS_SOURCES})
-target_include_directories(tools PUBLIC ${PROJECT_SOURCE_DIR}/include)
+add_executable(futscrapp ${FUTSCRAPP_SOURCES})
+target_include_directories(futscrapp PUBLIC ${CPPREST_INCLUDE})
+target_link_libraries(futscrapp
+  futscrapplib
+  ${CPPREST_LIB}
+  ${CURL_LIBRARIES}
+  ${LIBXML2_LIBRARIES}
+  Boost::boost
+  Boost::random
+  Boost::system
+  Boost::thread
+  Boost::filesystem
+  Boost::chrono
+  Boost::atomic
+  Boost::date_time
+  Boost::regex
+  OpenSSL::SSL
+)
+target_compile_definitions(futscrapp PUBLIC ${LIBXML2_DEFINITIONS})
