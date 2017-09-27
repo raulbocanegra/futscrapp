@@ -1,42 +1,68 @@
-#include "futscrapplib/Club.h"
+#include "futscrapplib/Bank.h"
+#include "futscrapplib/Common.h"
 #include <iostream>
 #include <iomanip>
 #include <string>
 
+
 using namespace futscrapp;
 
-Club::Club(const std::string & name)
-	: _money(initial_money)	
-	, _name(name)
-	, _players()
+Bank & futscrapp::Bank::getInstance()
 {
-	// Nothing to do here
+	static Bank b;
+	return b;
 }
 
-void Club::sellPlayer(const std::string& player, int price)
+bool Bank::open_account(const std::string & client)
 {
-	_money += price;
-	_players.erase(player);	
+	return _accounts.insert({ client, common::initial_money }).second;
 }
 
-void Club::buyPlayer(const std::string& player, int price)
+bool futscrapp::Bank::has_account(const std::string & client) const
 {
-	_money -= price;
-	_players.insert(player);
+	return (_accounts.find(client) != _accounts.end());
 }
 
-std::string futscrapp::Club::getName() const
+void Bank::deposit(const std::string & account, int money)
 {
-	return _name;
+	auto account_it = _accounts.find(account);
+	if (account_it == _accounts.end())
+	{
+		throw std::runtime_error("Bank account not found!");
+	}
+	account_it->second += money;
 }
 
-std::ostream & Club::print(std::ostream & out) const
+void Bank::withdraw(const std::string & account, int money)
 {
-	return out << std::setw(30) << std::left << _name << " has " << std::setw(10) << std::put_money(_money) << " and "
-		<< _players.size() << " players\n";
+	auto account_it = _accounts.find(account);
+	if (account_it == _accounts.end())
+	{
+		throw std::runtime_error("Bank account not found!");
+	}
+	account_it->second -= money;
 }
 
-std::ostream & futscrapp::operator<<(std::ostream & out, const Club & c)
+int Bank::getMoney(const std::string & account)
+{
+	auto account_it = _accounts.find(account);
+	if (account_it == _accounts.end())
+	{
+		throw std::runtime_error("Bank account not found!");
+	}
+	return account_it->second;
+}
+
+std::ostream & Bank::print(std::ostream & out) const
+{
+	for (const auto& a : _accounts)
+	{
+		out << std::setw(30) << std::left << a.first << " has " << std::setw(10) << std::put_money(a.second) << std::endl;
+	}
+	return out;
+}
+
+std::ostream & futscrapp::operator<<(std::ostream & out, const Bank & c)
 {
 	return c.print(out);
 }
