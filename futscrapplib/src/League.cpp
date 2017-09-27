@@ -1,5 +1,6 @@
 #include "futscrapplib/League.h"
 #include "futscrapplib/Common.h"
+#include "futscrapplib/Bank.h"
 #include <iterator>
 #include <iostream>
 #include <string>
@@ -25,6 +26,12 @@ size_t futscrapp::League::getNumClubs() const
 	return _clubs.size();
 }
 
+void futscrapp::League::fineClub(const std::string & club_name, int amount)
+{
+	auto& b = Bank::getInstance();
+	b.withdraw(club_name, amount);
+}
+
 void League::updateMoneyFromPoints()
 {
 	std::map<std::string, double> club_points;
@@ -36,15 +43,17 @@ void League::updateMoneyFromPoints()
 			club_points[fixture.getClubName(i+1)] += fixture.getPoints(i+1);
 		}		
 	}
+	auto& bank = Bank::getInstance();
 	for (auto& c : _clubs)
 	{
-		c._money += club_points[c.getName()] * common::point_prize;
+		bank.deposit(c.getName(), club_points[c.getName()] * common::point_prize);
 	}
 }
 
 void League::updateMoneyFromPlayers(const std::vector<BestTeamOfTheWeek>& tow)
 {
 	size_t week = 0;
+	auto& bank = Bank::getInstance();
 	for (auto& fixture : _fixture_tables)
 	{
 		auto best_tow = tow[week];
@@ -76,11 +85,11 @@ void League::updateMoneyFromPlayers(const std::vector<BestTeamOfTheWeek>& tow)
 				best_tow_v.begin(), best_tow_v.end(),
 				std::back_inserter(intersection));
 			auto num_players = intersection.size();
-			std::cout << "Club " << club_name << " has " << num_players << " in the team of the week " << (week + 1)
+			std::cout << "\tClub " << club_name << " has " << num_players << " in the team of the week " << (week + 1)
 					  << std::endl;
 			if (num_players)
 			{
-				std::cout << "Players:";
+				std::cout << "\tPlayers:";
 				for (const auto& p : intersection)
 				{
 					std::cout << " " << p;
@@ -99,8 +108,8 @@ void League::updateMoneyFromPlayers(const std::vector<BestTeamOfTheWeek>& tow)
 			{
 				throw std::runtime_error("Club not found!");
 			}
-			it->_money += (num_players * common::best_eleven_prize) + ((has_bpow) ? common::best_player_prize : 0);
-
+			bank.deposit(it->getName(), 
+				(num_players * common::best_eleven_prize) + ((has_bpow) ? common::best_player_prize : 0));
 		}
 		++week;
 	}
@@ -110,8 +119,10 @@ void futscrapp::League::updateMoneyFromPosition()
 {
 	auto num_clubs = _clubs.size();
 	size_t week = 1;
+	auto& bank = Bank::getInstance();
 	for (const auto& fixture : _fixture_tables)
 	{
+		std::cout << "Week " << week << ":" << std::endl;
 		// Get the name of the 3 last clubs of the fixture and update their money
 		for (size_t i = 0; i < 3; ++i)
 		{
@@ -126,8 +137,9 @@ void futscrapp::League::updateMoneyFromPosition()
 			{
 				throw std::runtime_error("Club not found!");
 			}
-			std::cout << club_name << " finished in position " << (num_clubs - i) << " on week " << week << std::endl;
-			it->_money += common::ranking_prize[i];
+			
+			std::cout << "Position " << (num_clubs - i) << ":" << club_name << std::endl;
+			bank.deposit(it->getName(), common::ranking_prize[i]);			
 		}
 		++week;
 	}

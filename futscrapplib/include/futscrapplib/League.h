@@ -24,6 +24,8 @@ namespace futscrapp
 
 		std::vector<Club> clubs() const;
 		size_t getNumClubs() const;
+
+		void fineClub(const std::string& club_name, int amount);
 		//void updateMoneyFromMarket();
 		void updateMoneyFromPoints();
 		void updateMoneyFromPlayers(const std::vector<BestTeamOfTheWeek>& tow);
