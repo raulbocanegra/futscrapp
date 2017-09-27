@@ -1,6 +1,7 @@
 #include <iostream>
 #include "libxml/HTMLparser.h"
 #include "libxml/HTMLtree.h"
+#include "futscrapplib/Bank.h"
 #include "futscrapplib/Club.h"
 #include "futscrapplib/Common.h"
 #include "futscrapplib/League.h"
@@ -8,10 +9,12 @@
 #include <fstream>
 #include <map>
 #include <string>
+#include <experimental/filesystem>
 
 using namespace std;
 using namespace futscrapp;
 using namespace futscrapp::common;
+namespace fs = std::experimental::filesystem::v1;
 
 namespace
 {
@@ -185,59 +188,47 @@ namespace
 
 int main()
 {
-	std::string pressroom_file = "C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\futmondo_pressroom_august.html";
-	std::vector<std::string> market_months
+	fs::path resource_folder = "C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res";
+	fs::path week_folder = resource_folder / "Weeks";
+	std::map<std::string, std::vector<fs::path>> weeks;
+	for (auto dir_it = fs::directory_iterator(week_folder); dir_it != fs::directory_iterator(); ++dir_it)
 	{
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\futmondo_pressroom_august.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\futmondo_pressroom_september.html"
-	};
+		std::cout << dir_it->path().string() << std::endl;
+		std::vector<fs::path> week_files;
+		std::string week = dir_it->path().filename().string();
+		for (auto file_it = fs::directory_iterator(dir_it->path()); file_it != fs::directory_iterator(); ++file_it)
+		{
+			week_files.emplace_back(file_it->path());
+		}
+		weeks.emplace(std::make_pair( week, week_files ));
+	}
+	fs::path pressroom_folder = resource_folder / "PressRoom";
+	std::vector<fs::path> market_months;
+	for (auto dir_it = fs::directory_iterator(pressroom_folder); dir_it != fs::directory_iterator(); ++dir_it)
+	{
+		market_months.emplace_back(dir_it->path());
+	}
 
-	std::string table_file
-		= "C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamOfTheWeek.html";
-	std::string out_filename = "C:\\Users\\Raul\\OneDrive\\Programming\\FutScrap.txt";
-	std::ofstream fout(out_filename, std::ios::binary);
-	std::vector<std::string> week1Teams
+	fs::path teams_of_week_folder = resource_folder / "TeamsOfTheWeek";
+	std::map<std::string, fs::path> teams_of_week;
+	for (auto dir_it = fs::directory_iterator(teams_of_week_folder); dir_it != fs::directory_iterator(); ++dir_it)
 	{
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos1.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos2.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos3.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos4.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos5.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos6.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos7.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos8.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamPos9.html"
-	};
-	std::vector<std::string> week2Teams
-	{
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos1.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos2.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos3.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos4.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos5.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos6.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos7.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos8.html",
-		"C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamPos9.html"
-	};
-	std::map<unsigned, std::vector<std::string>> weeks
-	{
-		{1, week1Teams},
-		{2, week2Teams}
-	};
+		std::cout << dir_it->path().string() << std::endl;
+		std::vector<fs::path> week_files;
+		std::string week = dir_it->path().filename().string();
+		fs::path file;
+		for (auto file_it = fs::directory_iterator(dir_it->path()); file_it != fs::directory_iterator(); ++file_it)
+		{
+			file = file_it->path();
+		}
+		teams_of_week.emplace(std::make_pair(week, file));
+	}
 
-	std::map<unsigned, std::string> teamsOfTheWeek
-	{
-		{ 1, "C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W1\\TeamOfTheWeek.html" },
-		{ 2, "C:\\Users\\Raul\\OneDrive\\Programming\\C++\\futscrapp\\res\\W2\\TeamOfTheWeek.html" }
-	};
-
-	// Read the market form file
-	
+	// Read the market from file
 	MarketMap market;
 	for (size_t i = 0; i < market_months.size(); ++i)
 	{
-		MarketOfMonth m = getTransactionsFromFile(market_months[i]);
+		MarketOfMonth m = getTransactionsFromFile(market_months[i].string());
 		market.emplace(std::make_pair(i, std::move(m)));
 	}
 
@@ -292,9 +283,9 @@ int main()
 
 	// Eleven of the week
 	std::vector<BestTeamOfTheWeek> teams_of_the_week;
-	for (const auto& team_file : teamsOfTheWeek)
+	for (const auto& team_file : teams_of_week)
 	{
-		BestTeamOfTheWeek team_of_the_week = getTeamOfTheWeekFromFile(team_file.second);
+		BestTeamOfTheWeek team_of_the_week = getTeamOfTheWeekFromFile(team_file.second.string());
 		teams_of_the_week.emplace_back(std::move(team_of_the_week));
 	}
 	
@@ -305,7 +296,7 @@ int main()
 		Table table;
 		for (const auto& file : week.second)
 		{			
-			Position p = getTableFromFile(file);
+			Position p = getTableFromFile(file.string());
 			if (!table.addPosition(std::move(p)))
 			{
 				throw std::runtime_error("Error inserting Position in Table!!");
@@ -320,12 +311,19 @@ int main()
 	league.updateMoneyFromPlayers(teams_of_the_week);
 	league.updateMoneyFromPosition();
 
-	// TODO: Add Fines.
+	// Add Fines.
+	league.fineClub("Real Carlillos F.C.", 5000000);
+	league.fineClub("Real Carlillos F.C.", 5000000);
+	
 	// output
+	std::string out_filename = "C:\\Users\\Raul\\OneDrive\\Programming\\FutScrap.txt";
+	std::ofstream fout(out_filename, std::ios::binary);
 	for (const auto& c : league.clubs())
 	{
 		fout << c;
 		std::cout << c;
 	}
+
+	
 	return 0;
 }
