@@ -20,13 +20,15 @@ namespace futscrapp { namespace common
 	constexpr int point_prize = 100000;
 	constexpr int best_player_prize = 1000000;
 	constexpr int best_eleven_prize = 1000000;
-	constexpr int week_prize = 15000000;
-	// Prize to be 
+	constexpr int week_prize = 15000000;	
+	constexpr int initial_money = 250000000;
+
+	// Prize to be paid depending on the ranking
 	constexpr std::array<int,3> ranking_prize =
 	{
-		static_cast<int>(week_prize * 0.2),
+		static_cast<int>(week_prize * 0.5),
 		static_cast<int>(week_prize * 0.3),
-		static_cast<int>(week_prize * 0.5)
+		static_cast<int>(week_prize * 0.2)
 	};
 
 	// -----------------------------------------------------------------------------------------------------------------
